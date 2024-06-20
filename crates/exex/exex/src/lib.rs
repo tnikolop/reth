@@ -1,4 +1,4 @@
-// todo: expand this (examples, assumptions, invariants)
+// TODO: expand this (examples, assumptions, invariants)
 //! Execution extensions (`ExEx`).
 //!
 //! An execution extension is a task that derives its state from Reth's state.
@@ -26,6 +26,7 @@
 //! [`Future`]: std::future::Future
 //! [`ExExContext`]: crate::ExExContext
 //! [`CanonStateNotification`]: reth_provider::CanonStateNotification
+
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/paradigmxyz/reth/main/assets/reth-docs.png",
     html_favicon_url = "https://avatars0.githubusercontent.com/u/97369466?s=256",
@@ -34,18 +35,22 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
+/// The context module, which contains the definition and implementation of the `ExExContext` struct.
 mod context;
 pub use context::*;
 
+/// The event module, which contains the definition of the `ExExEvent` enum.
 mod event;
 pub use event::*;
 
+/// The manager module, which manages the lifecycle and execution of `ExEx` tasks.
 mod manager;
 pub use manager::*;
 
+/// The notification module, which handles the notifications that `ExEx` tasks can receive.
 mod notification;
 pub use notification::*;
 
-// Re-export exex types
+// Re-export ExEx types for easy access.
 #[doc(inline)]
 pub use reth_exex_types::*;

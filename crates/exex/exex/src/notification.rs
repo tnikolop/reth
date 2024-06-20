@@ -29,7 +29,9 @@ impl ExExNotification {
     /// variants, if any.
     pub fn committed_chain(&self) -> Option<Arc<Chain>> {
         match self {
+            // For ChainCommitted and ChainReorged variants, return the new chain.
             Self::ChainCommitted { new } | Self::ChainReorged { old: _, new } => Some(new.clone()),
+            // For ChainReverted, return None since there's no committed chain.
             Self::ChainReverted { .. } => None,
         }
     }
@@ -38,16 +40,24 @@ impl ExExNotification {
     /// variants, if any.
     pub fn reverted_chain(&self) -> Option<Arc<Chain>> {
         match self {
+            // For ChainReorged and ChainReverted variants, return the old chain.
             Self::ChainReorged { old, new: _ } | Self::ChainReverted { old } => Some(old.clone()),
+            // For ChainCommitted, return None since there's no reverted chain.
             Self::ChainCommitted { .. } => None,
         }
     }
 }
 
 impl From<CanonStateNotification> for ExExNotification {
+    /// Converts from CanonStateNotification to ExExNotification.
+    ///
+    /// This conversion is implemented to translate provider-specific notifications into
+    /// ExEx-specific notifications.
     fn from(notification: CanonStateNotification) -> Self {
         match notification {
+            // Convert CanonStateNotification::Commit to ExExNotification::ChainCommitted.
             CanonStateNotification::Commit { new } => Self::ChainCommitted { new },
+            // Convert CanonStateNotification::Reorg to ExExNotification::ChainReorged.
             CanonStateNotification::Reorg { old, new } => Self::ChainReorged { old, new },
         }
     }

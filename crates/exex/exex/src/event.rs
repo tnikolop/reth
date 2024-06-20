@@ -2,6 +2,7 @@ use reth_primitives::BlockNumber;
 
 /// Events emitted by an `ExEx`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// ExExEvent enum: Describes the purpose of the enum and provides details on its variant.
 pub enum ExExEvent {
     /// Highest block processed by the `ExEx`.
     ///
@@ -10,4 +11,4 @@ pub enum ExExEvent {
     ///
     /// On reorgs, it's possible for the height to go down.
     FinishedHeight(BlockNumber),
-}
+}   // FinishedHeight variant: Explains what this variant represents, including the implications for block pruning and reorganization.

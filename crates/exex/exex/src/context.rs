@@ -35,13 +35,20 @@ pub struct ExExContext<Node: FullNodeComponents> {
 }
 
 impl<Node: FullNodeComponents> Debug for ExExContext<Node> {
+    /// Implements the `Debug` trait for `ExExContext` to allow for formatted output.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ExExContext")
+            // Display the current head.
             .field("head", &self.head)
+            // Display the node configuration.
             .field("config", &self.config)
+            // Display the loaded node configuration.
             .field("reth_config", &self.reth_config)
+            // Display the events sender.
             .field("events", &self.events)
+            // Display the notifications receiver.
             .field("notifications", &self.notifications)
+            // Display a placeholder for components to avoid verbose output.
             .field("components", &"...")
             .finish()
     }

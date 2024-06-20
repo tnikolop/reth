@@ -33,3 +33,7 @@ impl FinishedExExHeight {
         matches!(self, Self::NotReady)
     }
 }
+
+///This Rust module defines types related to ExEx usage,
+/// including an enum FinishedExExHeight to represent different states of ExEx's finished heights,
+/// along with utility functions.

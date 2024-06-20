@@ -1,5 +1,22 @@
 //! Test helpers for `reth-exex`
 
+//! This module contains various test helpers and utilities for testing components
+//! related to Execution Extensions (`ExEx`) in the Reth project.
+//!
+//! # Examples
+//!
+//! Examples of test cases and utilities include:
+//! - Building test components (`TestPoolBuilder`, `TestExecutorBuilder`, `TestConsensusBuilder`).
+//! - Creating a test node (`TestNode`) that configures components for testing.
+//! - Setting up an `ExExContext` for testing with various configurations (`test_exex_context_with_chain_spec`).
+//! - Helpers for sending notifications and assertions on `ExEx` events (`TestExExHandle`).
+//! - Extension traits and utilities for polling `ExEx` futures (`PollOnce`).
+//!
+//! # Warning
+//!
+//! The utilities provided here are tailored for testing purposes and may not be suitable
+//! for production use.
+//!
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/paradigmxyz/reth/main/assets/reth-docs.png",
     html_favicon_url = "https://avatars0.githubusercontent.com/u/97369466?s=256",
@@ -20,6 +37,7 @@ use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_network::{config::SecretKey, NetworkConfigBuilder, NetworkManager};
 use reth_node_api::{FullNodeTypes, FullNodeTypesAdapter, NodeTypes};
 use reth_node_builder::{
+    //!
     components::{
         Components, ComponentsBuilder, ConsensusBuilder, ExecutorBuilder, NodeComponentsBuilder,
         PoolBuilder,
@@ -224,16 +242,21 @@ impl TestExExHandle {
 pub async fn test_exex_context_with_chain_spec(
     chain_spec: Arc<ChainSpec>,
 ) -> eyre::Result<(ExExContext<Adapter>, TestExExHandle)> {
+    // Initialize necessary components
     let transaction_pool = testing_pool();
     let evm_config = EthEvmConfig::default();
     let executor = MockExecutorProvider::default();
     let consensus = Arc::new(TestConsensus::default());
 
+    // Create a provider factory and initialize the blockchain provider
     let provider_factory = create_test_provider_factory_with_chain_spec(chain_spec);
     let genesis_hash = init_genesis(provider_factory.clone())?;
-    let provider =
-        BlockchainProvider::new(provider_factory.clone(), Arc::new(NoopBlockchainTree::default()))?;
+    let provider = BlockchainProvider::new(
+        provider_factory.clone(),
+        Arc::new(NoopBlockchainTree::default()),
+    )?;
 
+    // Setup network manager and extract the network handle
     let network_manager = NetworkManager::new(
         NetworkConfigBuilder::new(SecretKey::new(&mut rand::thread_rng()))
             .build(provider_factory.clone()),
@@ -241,12 +264,16 @@ pub async fn test_exex_context_with_chain_spec(
     .await?;
     let network = network_manager.handle().clone();
 
+    // Initialize payload builder and fetch tasks
     let (_, payload_builder) = NoopPayloadBuilderService::<EthEngineTypes>::new();
-
     let tasks = TaskManager::current();
     let task_executor = tasks.executor();
 
-    let components = NodeAdapter::<FullNodeTypesAdapter<TestNode, _, _>, _> {
+    // Assemble components for the node adapter
+    let components = NodeAdapter::<
+        FullNodeTypesAdapter<TestNode, _, _>,
+        _,
+    > {
         components: Components {
             transaction_pool,
             evm_config,
@@ -259,6 +286,7 @@ pub async fn test_exex_context_with_chain_spec(
         provider,
     };
 
+    // Retrieve the genesis block from the provider factory
     let genesis = provider_factory
         .block_by_hash(genesis_hash)?
         .ok_or(eyre::eyre!("genesis block not found"))?
@@ -266,6 +294,7 @@ pub async fn test_exex_context_with_chain_spec(
         .seal_with_senders()
         .ok_or(eyre::eyre!("failed to recover senders"))?;
 
+    // Define the head of the blockchain
     let head = Head {
         number: genesis.number,
         hash: genesis_hash,
@@ -274,9 +303,11 @@ pub async fn test_exex_context_with_chain_spec(
         total_difficulty: Default::default(),
     };
 
+    // Create channels for events and notifications
     let (events_tx, events_rx) = tokio::sync::mpsc::unbounded_channel();
     let (notifications_tx, notifications_rx) = tokio::sync::mpsc::channel(1);
 
+    // Construct the Execution Extension context
     let ctx = ExExContext {
         head,
         config: NodeConfig::test(),
@@ -286,7 +317,17 @@ pub async fn test_exex_context_with_chain_spec(
         components,
     };
 
-    Ok((ctx, TestExExHandle { genesis, provider_factory, events_rx, notifications_tx, tasks }))
+    // Return the context along with a handle to manage test-specific resources
+    Ok((
+        ctx,
+        TestExExHandle {
+            genesis,
+            provider_factory,
+            events_rx,
+            notifications_tx,
+            tasks,
+        },
+    ))
 }
 
 /// Creates a new [`ExExContext`] with (mainnet)[`MAINNET`] chain spec.

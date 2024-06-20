@@ -60,6 +60,7 @@ impl ExExHandle {
     /// Returns the handle, as well as a [`UnboundedSender`] for [`ExExEvent`]s and a
     /// [`Receiver`] for [`ExExNotification`]s that should be given to the `ExEx`.
     pub fn new(id: String) -> (Self, UnboundedSender<ExExEvent>, Receiver<ExExNotification>) {
+        // Create channels for notifications and events
         let (notification_tx, notification_rx) = mpsc::channel(1);
         let (event_tx, event_rx) = mpsc::unbounded_channel();
 
@@ -282,64 +283,70 @@ impl Future for ExExManager {
     type Output = eyre::Result<()>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // drain handle notifications
+        // Drain handle notifications while the buffer is not full
         while self.buffer.len() < self.max_capacity {
             if let Poll::Ready(Some(notification)) = self.handle_rx.poll_recv(cx) {
+                // Log received notification details
                 debug!(
                     committed_tip = ?notification.committed_chain().map(|chain| chain.tip().number),
                     reverted_tip = ?notification.reverted_chain().map(|chain| chain.tip().number),
                     "Received new notification"
                 );
+                // Add the new notification to the buffer
                 self.push_notification(notification);
                 continue
             }
             break
         }
 
-        // update capacity
+        // Update the buffer capacity after adding new notifications
         self.update_capacity();
 
-        // advance all poll senders
+        // Advance all poll senders for each ExEx handle
         let mut min_id = usize::MAX;
         for idx in (0..self.exex_handles.len()).rev() {
             let mut exex = self.exex_handles.swap_remove(idx);
 
-            // it is a logic error for this to ever underflow since the manager manages the
-            // notification IDs
+            // Calculate the notification index for this ExEx handle
             let notification_index = exex
                 .next_notification_id
                 .checked_sub(self.min_id)
                 .expect("exex expected notification ID outside the manager's range");
             if let Some(notification) = self.buffer.get(notification_index) {
+                // Attempt to send the notification
                 if let Poll::Ready(Err(err)) = exex.send(cx, notification) {
-                    // the channel was closed, which is irrecoverable for the manager
+                    // If the channel was closed, return an error
                     return Poll::Ready(Err(err.into()))
                 }
             }
+            // Update the minimum notification ID seen so far
             min_id = min_id.min(exex.next_notification_id);
             self.exex_handles.push(exex);
         }
 
-        // remove processed buffered notifications
+        // Remove processed notifications from the buffer
         debug!(%min_id, "Updating lowest notification id in buffer");
         self.buffer.retain(|&(id, _)| id >= min_id);
         self.min_id = min_id;
 
-        // update capacity
+        // Update the buffer capacity after removing processed notifications
         self.update_capacity();
 
-        // handle incoming exex events
+        // Handle incoming events from each ExEx handle
         for exex in &mut self.exex_handles {
             while let Poll::Ready(Some(event)) = exex.receiver.poll_recv(cx) {
+                // Log the received event from the ExEx handle
                 debug!(exex_id = %exex.id, ?event, "Received event from exex");
+                // Increment the total events sent metric
                 exex.metrics.events_sent_total.increment(1);
+                // Update the finished height if the event contains a new height
                 match event {
                     ExExEvent::FinishedHeight(height) => exex.finished_height = Some(height),
                 }
             }
         }
 
-        // update watch channel block number
+        // Update the watch channel with the minimum finished height across all ExEx handles
         let finished_height = self.exex_handles.iter_mut().try_fold(u64::MAX, |curr, exex| {
             let height = match exex.finished_height {
                 None => return Err(()),
@@ -356,9 +363,11 @@ impl Future for ExExManager {
             let _ = self.finished_height.send(FinishedExExHeight::Height(finished_height));
         }
 
+        // Indicate that the future is not yet complete and should be polled again
         Poll::Pending
     }
 }
+
 
 /// A handle to communicate with the [`ExExManager`].
 #[derive(Debug)]
@@ -467,6 +476,19 @@ async fn make_wait_future(mut rx: watch::Receiver<bool>) -> watch::Receiver<bool
 }
 
 impl Clone for ExExManagerHandle {
+    /// Implements cloning for `ExExManagerHandle`.
+    ///
+    /// This method creates a new instance of `ExExManagerHandle` with cloned fields:
+    /// - `exex_tx`: Clones the unbounded sender for `ExExNotification`.
+    /// - `num_exexs`: Copies the number of `ExEx` instances.
+    /// - `is_ready_receiver`: Clones the watch channel receiver indicating manager readiness.
+    /// - `is_ready`: Initializes a new `ReusableBoxFuture` waiting on `is_ready_receiver`.
+    /// - `current_capacity`: Clones the atomic integer tracking buffer capacity.
+    /// - `finished_height`: Clones the watch channel for `FinishedExExHeight`.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `ExExManagerHandle` with cloned fields.
     fn clone(&self) -> Self {
         Self {
             exex_tx: self.exex_tx.clone(),
@@ -481,18 +503,26 @@ impl Clone for ExExManagerHandle {
 
 #[cfg(test)]
 mod tests {
+    // Define asynchronous tests using `tokio::test` attribute
+
     #[tokio::test]
     async fn delivers_events() {}
+        // Test function for ensuring events are delivered correctly
 
     #[tokio::test]
     async fn capacity() {}
+        // Test function for verifying capacity-related functionality
 
     #[tokio::test]
     async fn updates_block_height() {}
+        // Test function for validating block height updates
 
     #[tokio::test]
     async fn slow_exex() {}
+        // Test function for handling scenarios with slow execution extensions
 
     #[tokio::test]
     async fn is_ready() {}
+        // Test function for checking manager readiness
+    
 }
