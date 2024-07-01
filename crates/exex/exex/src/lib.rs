@@ -35,22 +35,22 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-/// The context module, which contains the definition and implementation of the `ExExContext` struct.
+/// the context module, which contains the definition and implementation of the `ExExContext` struct.
 mod context;
 pub use context::*;
 
-/// The event module, which contains the definition of the `ExExEvent` enum.
+/// the event module, which contains the definition of the `ExExEvent` enum.
 mod event;
 pub use event::*;
 
-/// The manager module, which manages the lifecycle and execution of `ExEx` tasks.
+/// the manager module, which manages the lifecycle and execution of `ExEx` tasks.
 mod manager;
 pub use manager::*;
 
-/// The notification module, which handles the notifications that `ExEx` tasks can receive.
+/// the notification module, which handles the notifications that `ExEx` tasks can receive.
 mod notification;
 pub use notification::*;
 
-// Re-export ExEx types for easy access.
+// re-export ExEx types for easy access.
 #[doc(inline)]
 pub use reth_exex_types::*;

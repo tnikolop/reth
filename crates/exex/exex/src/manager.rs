@@ -19,48 +19,48 @@ use tokio::sync::{
 };
 use tokio_util::sync::{PollSendError, PollSender, ReusableBoxFuture};
 
-/// Metrics for an `ExEx`.
+/// metrics for an `ExEx`.
 #[derive(Metrics)]
 #[metrics(scope = "exex")]
 struct ExExMetrics {
-    /// The total number of notifications sent to an `ExEx`.
+    /// the total number of notifications sent to an `ExEx`.
     notifications_sent_total: Counter,
-    /// The total number of events an `ExEx` has sent to the manager.
+    /// the total number of events an `ExEx` has sent to the manager.
     events_sent_total: Counter,
 }
 
-/// A handle to an `ExEx` used by the [`ExExManager`] to communicate with `ExEx`'s.
+/// a handle to an `ExEx` used by the [`ExExManager`] to communicate with `ExEx`'s.
 ///
-/// A handle should be created for each `ExEx` with a unique ID. The channels returned by
+/// a handle should be created for each `ExEx` with a unique ID. The channels returned by
 /// [`ExExHandle::new`] should be given to the `ExEx`, while the handle itself should be given to
 /// the manager in [`ExExManager::new`].
 #[derive(Debug)]
 pub struct ExExHandle {
-    /// The execution extension's ID.
+    /// the execution extension's ID.
     id: String,
-    /// Metrics for an `ExEx`.
+    /// metrics for an `ExEx`.
     metrics: ExExMetrics,
 
-    /// Channel to send [`ExExNotification`]s to the `ExEx`.
+    /// channel to send [`ExExNotification`]s to the `ExEx`.
     sender: PollSender<ExExNotification>,
-    /// Channel to receive [`ExExEvent`]s from the `ExEx`.
+    /// channel to receive [`ExExEvent`]s from the `ExEx`.
     receiver: UnboundedReceiver<ExExEvent>,
-    /// The ID of the next notification to send to this `ExEx`.
+    /// the ID of the next notification to send to this `ExEx`.
     next_notification_id: usize,
 
-    /// The finished block number of the `ExEx`.
+    /// the finished block number of the `ExEx`.
     ///
-    /// If this is `None`, the `ExEx` has not emitted a `FinishedHeight` event.
+    /// if this is `None`, the `ExEx` has not emitted a `FinishedHeight` event.
     finished_height: Option<BlockNumber>,
 }
 
 impl ExExHandle {
-    /// Create a new handle for the given `ExEx`.
+    /// create a new handle for the given `ExEx`.
     ///
-    /// Returns the handle, as well as a [`UnboundedSender`] for [`ExExEvent`]s and a
+    /// returns the handle, as well as a [`UnboundedSender`] for [`ExExEvent`]s and a
     /// [`Receiver`] for [`ExExNotification`]s that should be given to the `ExEx`.
     pub fn new(id: String) -> (Self, UnboundedSender<ExExEvent>, Receiver<ExExNotification>) {
-        // Create channels for notifications and events
+        // create channels for notifications and events
         let (notification_tx, notification_rx) = mpsc::channel(1);
         let (event_tx, event_rx) = mpsc::unbounded_channel();
 
@@ -78,10 +78,10 @@ impl ExExHandle {
         )
     }
 
-    /// Reserves a slot in the `PollSender` channel and sends the notification if the slot was
+    /// reserves a slot in the `PollSender` channel and sends the notification if the slot was
     /// successfully reserved.
     ///
-    /// When the notification is sent, it is considered delivered.
+    /// whe n the notification is sent, it is considered delivered.
     fn send(
         &mut self,
         cx: &mut Context<'_>,
@@ -90,9 +90,9 @@ impl ExExHandle {
         if let Some(finished_height) = self.finished_height {
             match notification {
                 ExExNotification::ChainCommitted { new } => {
-                    // Skip the chain commit notification if the finished height of the ExEx is
+                    // skip the chain commit notification if the finished height of the ExEx is
                     // higher than or equal to the tip of the new notification.
-                    // I.e., the ExEx has already processed the notification.
+                    // gia paradeigma the ExEx has already processed the notification.
                     if finished_height >= new.tip().number {
                         debug!(
                             exex_id = %self.id,
@@ -140,19 +140,19 @@ impl ExExHandle {
     }
 }
 
-/// Metrics for the `ExEx` manager.
+/// metrics for the `ExEx` manager.
 #[derive(Metrics)]
 #[metrics(scope = "exex_manager")]
 pub struct ExExManagerMetrics {
-    /// Max size of the internal state notifications buffer.
+    /// max size of the internal state notifications buffer.
     max_capacity: Gauge,
-    /// Current capacity of the internal state notifications buffer.
+    /// current capacity of the internal state notifications buffer.
     current_capacity: Gauge,
-    /// Current size of the internal state notifications buffer.
+    /// current size of the internal state notifications buffer.
     ///
-    /// Note that this might be slightly bigger than the maximum capacity in some cases.
+    /// note that this might be slightly bigger than the maximum capacity in some cases.
     buffer_size: Gauge,
-    /// Current number of `ExEx`'s on the node.
+    /// current number of `ExEx`'s on the node.
     num_exexs: Gauge,
 }
 
@@ -507,7 +507,7 @@ mod tests {
 
     #[tokio::test]
     async fn delivers_events() {}
-        // Test function for ensuring events are delivered correctly
+        // Ttest function for ensuring events are delivered correctly
 
     #[tokio::test]
     async fn capacity() {}

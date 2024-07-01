@@ -6,28 +6,28 @@ use reth_tasks::TaskExecutor;
 use std::fmt::Debug;
 use tokio::sync::mpsc::{Receiver, UnboundedSender};
 
-/// Captures the context that an `ExEx` has access to.
+/// Captures the context that an `ExEx` has access to
 pub struct ExExContext<Node: FullNodeComponents> {
-    /// The current head of the blockchain at launch.
+    /// The current head of the blockchain at launch
     pub head: Head,
     /// The config of the node
     pub config: NodeConfig,
     /// The loaded node config
     pub reth_config: reth_config::Config,
-    /// Channel used to send [`ExExEvent`]s to the rest of the node.
+    /// Channel used to send [`ExExEvent`]s to the rest of the node
     ///
     /// # Important
     ///
-    /// The exex should emit a `FinishedHeight` whenever a processed block is safe to prune.
+    /// The exex should emit a `FinishedHeight` whenever a processed block is safe to prune
     /// Additionally, the exex can pre-emptively emit a `FinishedHeight` event to specify what
-    /// blocks to receive notifications for.
+    /// blocks to receive notifications for
     pub events: UnboundedSender<ExExEvent>,
     /// Channel to receive [`ExExNotification`]s.
     ///
     /// # Important
     ///
     /// Once a an [`ExExNotification`] is sent over the channel, it is considered delivered by the
-    /// node.
+    /// node
     pub notifications: Receiver<ExExNotification>,
 
     /// node components
@@ -55,22 +55,22 @@ impl<Node: FullNodeComponents> Debug for ExExContext<Node> {
 }
 
 impl<Node: FullNodeComponents> ExExContext<Node> {
-    /// Returns the transaction pool of the node.
+    /// Returns the transaction pool of the node
     pub fn pool(&self) -> &Node::Pool {
         self.components.pool()
     }
 
-    /// Returns the node's evm config.
+    /// Returns the node's evm config
     pub fn evm_config(&self) -> &Node::Evm {
         self.components.evm_config()
     }
 
-    /// Returns the node's executor type.
+    /// Returns the node's executor type
     pub fn block_executor(&self) -> &Node::Executor {
         self.components.block_executor()
     }
 
-    /// Returns the provider of the node.
+    /// Returns the provider of the node
     pub fn provider(&self) -> &Node::Provider {
         self.components.provider()
     }
@@ -80,12 +80,12 @@ impl<Node: FullNodeComponents> ExExContext<Node> {
         self.components.network()
     }
 
-    /// Returns the handle to the payload builder service.
+    /// Returns the handle to the payload builder service
     pub fn payload_builder(&self) -> &reth_payload_builder::PayloadBuilderHandle<Node::Engine> {
         self.components.payload_builder()
     }
 
-    /// Returns the task executor.
+    /// Returns the task executor
     pub fn task_executor(&self) -> &TaskExecutor {
         self.components.task_executor()
     }
